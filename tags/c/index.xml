@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>c on Blog</title><link>https://xtyi.github.io/tags/c/</link><description>Recent content in c on Blog</description><generator>Hugo -- gohugo.io</generator><language>zh</language><lastBuildDate>Mon, 23 Jan 2017 13:38:28 +0800</lastBuildDate><atom:link href="https://xtyi.github.io/tags/c/index.xml" rel="self" type="application/rss+xml"/><item><title>C 语言的指针、数组和字符串</title><link>https://xtyi.github.io/posts/c-point-array-string/</link><pubDate>Mon, 23 Jan 2017 13:38:28 +0800</pubDate><guid>https://xtyi.github.io/posts/c-point-array-string/</guid><description>前言 🔗C 语言中单论指针是比较简单的，但是和数组，字符串放在一起就会令人困惑
+但其实 C 语言的一致性几乎是编程语言中最好的，对这些语法困惑的原因是没理解语法背后的实质
+数组 🔗很多人都认为数组名是数组首元素的地址，大学里很多老师也是这么教的
+这种说法是很滑稽的，数组名就是一个符号，代表数组而已
+a[1] = 1; // 这里数组名代表数组首元素地址吗？ int arr[5]; printf(&amp;#34;%d&amp;#34;, sizeof(arr)); // 输出 20，是指针的大小吗？ 提出这种说法的人大概是为了解释 “数组可以做很多指针操作”，但又总不能直接说 “数组就是指针” 吧
+实质是什么呢？数组就是数组，指针就是指针，没什么关系，顺便说一句，[] 是指针操作符
+pointer[1] 等价于 *(pointer + 1)
+而数组为什么也能用 [] 操作符呢？
+当某个地方需要一个值的时候，你写上了数组，但数组又不能运算，于是编译器就用数组首元素地址去运算了
+使用 [] 操作符时便是这种情况，因此，你一直认为的数组操作实际上是指针操作，数组是由于这种特殊的机制而能使用 []
+字符串 🔗字符串是存储在连续内存空间的以 &amp;lsquo;\0&amp;rsquo; 结尾的字符序列
+因此可以用数组保存字符串
+char str[] = &amp;#34;Hello World&amp;#34;; 访问字符串使用首个字符的地址
+printf(&amp;#34;%d&amp;#34;, str[1]); // 相当于 printf(&amp;#34;%d&amp;#34;, *(str + 1)); 字符串字面量是用一对双引号括起来的字符序列
+&amp;#34;Hello World&amp;#34; 当多个字符串字面量相邻时，编译器会把它们合并成一个字符串
+printf(&amp;#34;Hello&amp;#34; &amp;#34; World&amp;#34;); 编译器会将字符串字面量看作 char * 类型的值，printf() 函数的第一个参数就是一个 char * 类型的指针</description></item></channel></rss>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Blog</title><link>https://xtyi.github.io/posts/</link><description>Recent content in Posts on Blog</description><generator>Hugo -- gohugo.io</generator><language>zh</language><lastBuildDate>Thu, 12 Apr 2018 13:38:28 +0800</lastBuildDate><atom:link href="https://xtyi.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>JavaScript 的 this 是什么？</title><link>https://xtyi.github.io/posts/js-this/</link><pubDate>Thu, 12 Apr 2018 13:38:28 +0800</pubDate><guid>https://xtyi.github.io/posts/js-this/</guid><description>this 🔗理解 JS 的 this 实际上非常简单，只需要了解 call 就行了
+接下来，我们都使用 call 来调用函数，因为这才是 JS 最原始的函数调用方式
+function foo() { &amp;#39;use strict&amp;#39; console.log(this) console.log(arguments) } foo.call() foo.call({name: &amp;#39;nada&amp;#39;}) foo.call({name: &amp;#39;nada&amp;#39;}, 1, 2, 3) 上面三次调用打印的内容如下 可以看到，当我们什么都不传入的时候 this 为 undefined，而当我们传入一个对象作为第一个参数时，this 就是这个对象
+Arguments 对象是其它参数组成的一个伪数组
+现在，你已经知道 this 就是 call 调用时传入的第一个参数，那么 this 到底有什么用呢 ？正常调用函数时为什么没传 this ？
+我们不使用 this 写一段代码感受一下
+const person = { name: &amp;#39;nada&amp;#39;, greet(person) { console.log(`Hey, I&amp;#39;m ${person.name}`) } } person.</description></item><item><title>C 语言的指针、数组和字符串</title><link>https://xtyi.github.io/posts/c-point-array-string/</link><pubDate>Mon, 23 Jan 2017 13:38:28 +0800</pubDate><guid>https://xtyi.github.io/posts/c-point-array-string/</guid><description>前言 🔗C 语言中单论指针是比较简单的，但是和数组，字符串放在一起就会令人困惑
+但其实 C 语言的一致性几乎是编程语言中最好的，对这些语法困惑的原因是没理解语法背后的实质
+数组 🔗很多人都认为数组名是数组首元素的地址，大学里很多老师也是这么教的
+这种说法是很滑稽的，数组名就是一个符号，代表数组而已
+a[1] = 1; // 这里数组名代表数组首元素地址吗？ int arr[5]; printf(&amp;#34;%d&amp;#34;, sizeof(arr)); // 输出 20，是指针的大小吗？ 提出这种说法的人大概是为了解释 “数组可以做很多指针操作”，但又总不能直接说 “数组就是指针” 吧
+实质是什么呢？数组就是数组，指针就是指针，没什么关系，顺便说一句，[] 是指针操作符
+pointer[1] 等价于 *(pointer + 1)
+而数组为什么也能用 [] 操作符呢？
+当某个地方需要一个值的时候，你写上了数组，但数组又不能运算，于是编译器就用数组首元素地址去运算了
+使用 [] 操作符时便是这种情况，因此，你一直认为的数组操作实际上是指针操作，数组是由于这种特殊的机制而能使用 []
+字符串 🔗字符串是存储在连续内存空间的以 &amp;lsquo;\0&amp;rsquo; 结尾的字符序列
+因此可以用数组保存字符串
+char str[] = &amp;#34;Hello World&amp;#34;; 访问字符串使用首个字符的地址
+printf(&amp;#34;%d&amp;#34;, str[1]); // 相当于 printf(&amp;#34;%d&amp;#34;, *(str + 1)); 字符串字面量是用一对双引号括起来的字符序列
+&amp;#34;Hello World&amp;#34; 当多个字符串字面量相邻时，编译器会把它们合并成一个字符串
+printf(&amp;#34;Hello&amp;#34; &amp;#34; World&amp;#34;); 编译器会将字符串字面量看作 char * 类型的值，printf() 函数的第一个参数就是一个 char * 类型的指针</description></item></channel></rss>
