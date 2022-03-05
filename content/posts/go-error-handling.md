@@ -1,7 +1,7 @@
 ---
 title: Go 错误处理
 date: 2022-02-24T13:38:28+08:00
-draft: true
+draft: false
 tags:
   - go
 ---
