@@ -1,0 +1,447 @@
+<!doctype html><html lang=zh>
+<head>
+<title>Go 错误处理 | Blog</title><meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge,chrome=1">
+<meta name=viewport content="width=device-width,minimum-scale=1">
+<meta name=description content="Go 语言如何表示错误 🔗内置接口 🔗Go 语言内置了一个接口类型 error
+type error interface {  Error() string } 所有实现了 error 接口的类型被称为错误类型(Error Type)
+错误类型的值表示一个错误的发生
+error 接口只定义了一个方法 Error()，该方法返回一个字符串，用来描述错误信息
+注意：Error() 方法是为人类设计的，而非代码
+Error() 返回的错误信息只应该被存储在日志中，或是被打印到屏幕上，用于人类查看，绝不能在代码中检查该错误信息，依赖于该错误信息决定程序的执行逻辑
+例如，下面的代码是不好的
+func main() {  content, err := os.ReadFile(&#34;example.txt&#34;)  errInfo := err.Error()  switch errInfo {  case &#34;open example.txt: no such file or directory&#34;:  // handling error: create file  case &#34;open example.txt: permission denied&#34;:  // handling error: modify permission  } } errors 包中的错误类型 🔗Go 语言在标准库的 errors 包中定义了一个非常简单的错误类型">
+<meta name=generator content="Hugo 0.93.2">
+<meta name=ROBOTS content="NOINDEX, NOFOLLOW">
+<link rel=stylesheet href=/css/style.css>
+<link rel="shortcut icon" href=/images/favicon.ico type=image/x-icon>
+</head><body>
+<nav class=navigation>
+<a href=/> <span class=arrow>←</span>Home</a>
+<a href=/posts>Archive</a>
+<a href=/tags>Tags</a>
+<a href=/about>About</a>
+</nav><main class=main>
+<section id=single>
+<h1 class=title>Go 错误处理</h1><div class=tip>
+<time datetime="2022-02-24 13:38:28 +0800 +0800">Feb 24, 2022</time>
+<span class=split>
+·
+</span>
+<span>
+1441 words
+</span>
+<span class=split>
+·
+</span>
+<span>
+7 minute read
+</span>
+</div><aside class=toc>
+<details>
+<summary>Table of Contents
+</summary>
+<div>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#go-语言如何表示错误>Go 语言如何表示错误</a>
+<ul>
+<li><a href=#内置接口>内置接口</a></li><li><a href=#errors-包中的错误类型>errors 包中的错误类型</a></li><li><a href=#自定义错误类型>自定义错误类型</a></li></ul></li><li><a href=#go-语言如何检查错误>Go 语言如何检查错误</a></li><li><a href=#go-语言如何包装错误>Go 语言如何包装错误</a>
+<ul>
+<li><a href=#githubcompkgerrors>github.com/pkg/errors</a></li><li><a href=#go113>Go1.13</a></li></ul></li><li><a href=#如何设计错误处理>如何设计错误处理</a>
+<ul>
+<li><a href=#sentinel-error>sentinel error</a></li><li><a href=#custom-error-type>custom error type</a></li><li><a href=#opaque-error>opaque error</a></li></ul></li><li><a href=#go-语言如何处理错误>Go 语言如何处理错误</a></li><li><a href=#错误处理技巧>错误处理技巧</a></li><li><a href=#references>References</a></li></ul></nav></div></details>
+</aside><div class=content>
+<h1 id=go-语言如何表示错误>Go 语言如何表示错误 <a href=#go-%e8%af%ad%e8%a8%80%e5%a6%82%e4%bd%95%e8%a1%a8%e7%a4%ba%e9%94%99%e8%af%af class=anchor>🔗</a></h1><h2 id=内置接口>内置接口 <a href=#%e5%86%85%e7%bd%ae%e6%8e%a5%e5%8f%a3 class=anchor>🔗</a></h2><p>Go 语言内置了一个接口类型 <code>error</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-golang data-lang=golang><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#66d9ef>error</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>所有实现了 <code>error</code> 接口的类型被称为错误类型(Error Type)</p><p>错误类型的值表示一个错误的发生</p><p><code>error</code> 接口只定义了一个方法 <code>Error()</code>，该方法返回一个字符串，用来描述错误信息</p><p>注意：<code>Error()</code> 方法是为人类设计的，而非代码</p><p><code>Error()</code> 返回的错误信息只应该被存储在日志中，或是被打印到屏幕上，用于人类查看，绝不能在代码中检查该错误信息，依赖于该错误信息决定程序的执行逻辑</p><p>例如，下面的代码是不好的</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>ReadFile</span>(<span style=color:#e6db74>&#34;example.txt&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>errInfo</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>err</span>.<span style=color:#a6e22e>Error</span>()
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>errInfo</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;open example.txt: no such file or directory&#34;</span>:
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// handling error: create file
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>  <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;open example.txt: permission denied&#34;</span>:
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// handling error: modify permission
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=errors-包中的错误类型>errors 包中的错误类型 <a href=#errors-%e5%8c%85%e4%b8%ad%e7%9a%84%e9%94%99%e8%af%af%e7%b1%bb%e5%9e%8b class=anchor>🔗</a></h2><p>Go 语言在标准库的 <code>errors</code> 包中定义了一个非常简单的错误类型</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>errorString</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>s</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>errorString</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>s</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>由于 <code>errorString</code> 不是导出的，<code>errors</code> 包同时实现了一个 <code>New()</code> 函数用于创建该错误类型的值</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// New returns an error that formats as the given text.
+</span></span></span><span style=display:flex><span><span style=color:#75715e>// Each call to New returns a distinct error value even if the text is identical.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>New</span>(<span style=color:#a6e22e>text</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>errorString</span>{<span style=color:#a6e22e>text</span>}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>这样的好处是，更加语义化，比如我们创建错误时使用 <code>errors.New("some error")</code> 要比 <code>&ErrorString{"some error"}</code> 看起来更有语义</p><p>第二点是防止出错，例如不小心使用 <code>ErrorString{"some error"}</code>，因为 <code>*errorString</code> 类型才实现了 <code>Error()</code> 方法，<code>errorString</code> 类型并没有实现</p><p>那为什么不这样定义 <code>errorString</code> 错误类型呢</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>errorString</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>s</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#a6e22e>errorString</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>s</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>或者</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>errorString</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#a6e22e>errorString</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> string(<span style=color:#a6e22e>e</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>如果这样定义的话，当我们创建两个字符串内容相同的 <code>error</code> 时，这两个 <code>error</code> 的是相等的</p><p>这样因为 Go 语言对 <code>struct</code> 的 <code>==</code> 比较会比较其内部的各个字段</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>errorString</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#a6e22e>errorString</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>s</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err1</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>errorString</span>{<span style=color:#e6db74>&#34;some error&#34;</span>}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err2</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>errorString</span>{<span style=color:#e6db74>&#34;some error&#34;</span>}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>err1</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>err2</span>) <span style=color:#75715e>// true
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><p>下面的代码同理</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>errorString</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#a6e22e>errorString</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> string(<span style=color:#a6e22e>e</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err1</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>errorString</span>(<span style=color:#e6db74>&#34;some error&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err2</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>errorString</span>(<span style=color:#e6db74>&#34;some error&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>err1</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>err2</span>) <span style=color:#75715e>// true
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><p>但是 <code>errorString</code> 的设计并不希望这样，它希望的是每一个值都是不同的，注意 <code>New()</code> 函数上面的注释！</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err1</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#e6db74>&#34;some error&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err2</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#e6db74>&#34;some error&#34;</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>err1</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>err2</span>) <span style=color:#75715e>// false
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><blockquote>
+<p>下面会讲到，标准库里使用众多的一个 Go 错误处理的设计模式 sentinel error，就依赖该特性</p></blockquote><p><code>fmt</code> 包还有一个 <code>Errorf</code> 函数</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// go1.13 之前
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Errorf</span>(<span style=color:#a6e22e>format</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>a</span> <span style=color:#f92672>...</span><span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#a6e22e>Sprintf</span>(<span style=color:#a6e22e>format</span>, <span style=color:#a6e22e>a</span><span style=color:#f92672>...</span>))
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>这个函数更方便一点，先格式化后，再调用 <code>errors.New()</code></p><p>我们创建一个可能发生错误的函数时，可以使用 <code>errors.New()</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Sqrt</span>(<span style=color:#a6e22e>f</span> <span style=color:#66d9ef>float64</span>) (<span style=color:#66d9ef>float64</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>f</span> &lt; <span style=color:#ae81ff>0</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>, <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#e6db74>&#34;math: square root of negative number&#34;</span>)
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#75715e>// implementation
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><p>抛出错误方还应该包含尽可能多的上下文信息，例如 <code>os.ReadFile()</code> 的 <code>Error()</code> 方法会返回 <code>open example.txt: permission denied</code>，而不只是 <code>permission denied</code></p><p>此时，我们可以使用 <code>fmt.Errorf()</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>f</span> &lt; <span style=color:#ae81ff>0</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;math: square root of negative number %g&#34;</span>, <span style=color:#a6e22e>f</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=自定义错误类型>自定义错误类型 <a href=#%e8%87%aa%e5%ae%9a%e4%b9%89%e9%94%99%e8%af%af%e7%b1%bb%e5%9e%8b class=anchor>🔗</a></h2><p>使用 <code>errors.New()</code> 或 <code>fmt.Errorf()</code> 创建 <code>errors.errorString</code> 类型已经及格了，但我们可以做的更好</p><p>在实际的业务场景中，我们可以定义自己的错误类型，一般是一个 <code>struct</code>，里面是和业务相关的字段，例如</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>ParseError</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>Msg</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>File</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>Line</span> <span style=color:#66d9ef>int</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ParseError</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;%s:%d: %s&#34;</span>, <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>File</span>, <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>Line</span>, <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>Msg</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>parse</span>() <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>ParseError</span>{<span style=color:#e6db74>&#34;some error&#34;</span>, <span style=color:#e6db74>&#34;example.json&#34;</span>, <span style=color:#ae81ff>66</span>}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h1 id=go-语言如何检查错误>Go 语言如何检查错误 <a href=#go-%e8%af%ad%e8%a8%80%e5%a6%82%e4%bd%95%e6%a3%80%e6%9f%a5%e9%94%99%e8%af%af class=anchor>🔗</a></h1><p>上一节介绍了 Go 语言如何表示错误，核心就三句话：</p><ol>
+<li>Go 语言内置了一个接口类型 <code>error</code></li><li>所有实现了 <code>error</code> 接口的类型被称为错误类型</li><li>错误类型的值表示一个错误</li></ol><p>程序要和外界交互，就会不可避免地会出现事先预知的异常情况</p><p>这一节讲的是 Go 设计错误以及检查错误的几种方式</p><p>最简单的是比较 <code>err</code> 是否是 <code>nil</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// something went wrong
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><p>对于大多数情况，这种方法是很好的，错误的细节对于调用者是透明的</p><p>但是有些 API 可能发生多种错误，通过上述方法，调用者也只能知道是否发生了错误，而不能知道是哪一种错误</p><p>在标准库中很常见的一种做法是定义 sentinel error, 将可能的错误定义为一些错误值，每个错误值对应一种错误</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>ErrNotFound</span> = <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#e6db74>&#34;not found&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>ErrNotFound</span> {
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// something wasn&#39;t found
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><p>但有时调用者还需要知道更多的错误信息，因此许多库定义了自己的错误类型并暴露出来，让调用者使用接口断言机制获取更多信息</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>NotFoundError</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Name</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>NotFoundError</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>Name</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;: not found&#34;</span> }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>e</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>err</span>.(<span style=color:#f92672>*</span><span style=color:#a6e22e>NotFoundError</span>); <span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// e.Name wasn&#39;t found
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><p>上面是 3 种设计和检查错误的方式，检查错误是为了更好地处理，错误处理一个很普遍的方式是向上传递</p><p>当调用 API 得到 <code>err != nil</code> 时，调用方可能并没有责任去处理错误，而应该将错误传给上层，并且希望添加当前的上下文信息</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;decompress %v: %v&#34;</span>, <span style=color:#a6e22e>name</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>但是，这种行为会破坏以上的所有的错误设计，不论是 sentinel error，还是错误类型</p><p>因为 <code>fmt.Errorf()</code> 返回的是一个新的 <code>errorString</code> 类型的错误值</p><p>更上层的调用者无法使用该错误值和 sentinel error 比较，也无法断言为库导出的错误类型</p><p><code>fmt.Errorf()</code> 抹除了原有错误的一切类型信息</p><p>解决这个问题的方法是包装错误，<code>fmt.Errorf()</code> 本质上是创建了一个新的错误，对原始错误的保留仅仅是给人类看的错误信息</p><p>那我们自定义错误类型时，可以专门设置一个字段保存原始错误</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>QueryError</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Query</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Err</span>   <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>这种模式很快成为包装错误事实上的标准</p><p>当我们检查 sentinel error 时</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>qerr</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>err</span>.(<span style=color:#a6e22e>QueryError</span>); <span style=color:#a6e22e>ok</span> <span style=color:#f92672>&amp;&amp;</span> <span style=color:#a6e22e>qerr</span>.<span style=color:#a6e22e>Err</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>ErrNotFound</span> {
+</span></span><span style=display:flex><span>		<span style=color:#75715e>// do something
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>当我们检查错误类型时</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>qerr</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>err</span>.(<span style=color:#a6e22e>QueryError</span>); <span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>nerr</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>qerr</span>.<span style=color:#a6e22e>Err</span>.(<span style=color:#f92672>*</span><span style=color:#a6e22e>NotFoundError</span>); <span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>			<span style=color:#75715e>// do something	with nerr.Name
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>		}
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h1 id=go-语言如何包装错误>Go 语言如何包装错误 <a href=#go-%e8%af%ad%e8%a8%80%e5%a6%82%e4%bd%95%e5%8c%85%e8%a3%85%e9%94%99%e8%af%af class=anchor>🔗</a></h1><p>现在我们有了包装错误的方法，但是具体还需要实现很多功能</p><p>例如，希望在当前调用的层级添加调用栈信息</p><p>或是，上面的检查错误太麻烦了，我们希望能更简单的检查错误</p><p><code>github.com/pkg/errors</code> 和 Go1.13 版本对标准库的改进就是为了解决这些问题</p><h2 id=githubcompkgerrors>github.com/pkg/errors <a href=#githubcompkgerrors class=anchor>🔗</a></h2><p>因为 Go 的错误处理依赖契约规范(错误类型必须实现的只是一个为人类设计的 <code>Error()</code> 方法，没有任何其他能力!)，而不在语言编译器或运行时层面，</p><p>因此 Go 语言给了开发者极大的自由自己去定义错误处理的整个体系</p><p>由于 Go 语言 errors 包提供的错误类型太过简陋，一些开发者选择自己去定义错误类型和相关的错误处理方法</p><p>最有名的是 github.com/pkg/errors 包，这个包已经成为 Go 语言错误处理的事实标准，该包主要实现了错误链，包装调用栈和上下文信息等功能</p><p>pkg/errors 包定义了三个错误类型 <code>fundamental</code>, <code>withMessage</code>, <code>withStack</code></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>fundamental</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>msg</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#f92672>*</span><span style=color:#a6e22e>stack</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>f</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>fundamental</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>msg</span> }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>withMessage</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cause</span> <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>msg</span>   <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>withMessage</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>msg</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;: &#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>cause</span>.<span style=color:#a6e22e>Error</span>() }
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>withMessage</span>) <span style=color:#a6e22e>Cause</span>() <span style=color:#66d9ef>error</span>  { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>cause</span> }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>withStack</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>	<span style=color:#f92672>*</span><span style=color:#a6e22e>stack</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>w</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>withStack</span>) <span style=color:#a6e22e>Cause</span>() <span style=color:#66d9ef>error</span> { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>w</span>.<span style=color:#66d9ef>error</span> }
+</span></span></code></pre></div><p>这些错误类型有一个共同点就是都有一个 <code>cause</code> 字段, 来保存底层的错误，同时有一个 <code>Cause()</code> 方法返回 <code>cause</code> 字段</p><p>这样就可以实现一个 <code>Cause()</code> 函数，沿着 cause 字段构成的错误链，一只找到最底层的那个没有实现 <code>Cause()</code> 方法的原始错误</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Cause</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>type</span> <span style=color:#a6e22e>causer</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Cause</span>() <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cause</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>err</span>.(<span style=color:#a6e22e>causer</span>)
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>			<span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>cause</span>.<span style=color:#a6e22e>Cause</span>()
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>pkg/errors 实现了一些函数来创建错误或包装错误，代码都很简单，如下所示</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>New</span>(<span style=color:#a6e22e>message</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>fundamental</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>msg</span>:   <span style=color:#a6e22e>message</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>stack</span>: <span style=color:#a6e22e>callers</span>(),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Errorf</span>(<span style=color:#a6e22e>format</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>args</span> <span style=color:#f92672>...</span><span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>fundamental</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>msg</span>:   <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#a6e22e>format</span>, <span style=color:#a6e22e>args</span><span style=color:#f92672>...</span>),
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>stack</span>: <span style=color:#a6e22e>callers</span>(),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>WithMessage</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>, <span style=color:#a6e22e>message</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withMessage</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cause</span>: <span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>msg</span>:   <span style=color:#a6e22e>message</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>WithMessagef</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>, <span style=color:#a6e22e>format</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>args</span> <span style=color:#f92672>...</span><span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withMessage</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cause</span>: <span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>msg</span>:   <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#a6e22e>format</span>, <span style=color:#a6e22e>args</span><span style=color:#f92672>...</span>),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>WithStack</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withStack</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>callers</span>(),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Wrap</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>, <span style=color:#a6e22e>message</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err</span> = <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withMessage</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cause</span>: <span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>msg</span>:   <span style=color:#a6e22e>message</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withStack</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>callers</span>(),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Wrapf</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>, <span style=color:#a6e22e>format</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>args</span> <span style=color:#f92672>...</span><span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err</span> = <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withMessage</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cause</span>: <span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>msg</span>:   <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#a6e22e>format</span>, <span style=color:#a6e22e>args</span><span style=color:#f92672>...</span>),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>withStack</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>err</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>callers</span>(),
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>总结一下就是</p><ul>
+<li>New/Errorf
+<ul>
+<li>创建错误</li><li>新的错误是 <code>fundamental</code> 类型</li><li>带有 call stack 信息</li></ul></li><li>WithMessage/WithMessagef
+<ul>
+<li>包装错误</li><li>新的错误是 <code>withMessage</code> 类型</li><li>增添了上下文信息</li></ul></li><li>WithStack
+<ul>
+<li>包装错误</li><li>新的错误是 <code>withStack</code> 类型</li><li>增添了 call stack 信息</li></ul></li><li>Wrap/Wrapf
+<ul>
+<li>包装错误</li><li>先调用 <code>withMessage</code>，再调用 <code>withStack</code></li><li>增添了 call stack 信息和上下文信息</li></ul></li></ul><h2 id=go113>Go1.13 <a href=#go113 class=anchor>🔗</a></h2><p>在过去 Go 语言错误处理方面的实践中，自定义错误类型使用一个字段来指向底层错误的做法已经非常普遍</p><p>不管是上面通用目的的 <code>fundamental</code>, <code>withMessage</code>, <code>withStack</code>，还是一些面向特定场景的错误类型，例如</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>QueryError</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Query</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>Err</span>   <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>e</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>QueryError</span>) <span style=color:#a6e22e>Error</span>() <span style=color:#66d9ef>string</span> { <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>Query</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;: &#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>e</span>.<span style=color:#a6e22e>Err</span>.<span style=color:#a6e22e>Error</span>() }
+</span></span></code></pre></div><p>因此 Go 在 1.13 版本增加了对这种模式的支持，主要是为 errors 包添加了以下三个函数</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Unwrap</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>) <span style=color:#66d9ef>error</span> {}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>Is</span>(<span style=color:#a6e22e>err</span>, <span style=color:#a6e22e>target</span> <span style=color:#66d9ef>error</span>) <span style=color:#66d9ef>bool</span> {}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>As</span>(<span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>, <span style=color:#a6e22e>target</span> <span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>bool</span> {}
+</span></span></code></pre></div><p>同时修改了 <code>fmt.Errorf()</code> 的实现</p><h1 id=如何设计错误处理>如何设计错误处理 <a href=#%e5%a6%82%e4%bd%95%e8%ae%be%e8%ae%a1%e9%94%99%e8%af%af%e5%a4%84%e7%90%86 class=anchor>🔗</a></h1><p>Go 语言的错误处理有下面三种设计模式：</p><ol>
+<li>sentinel error</li><li>custom error type</li><li>opaque error</li></ol><h2 id=sentinel-error>sentinel error <a href=#sentinel-error class=anchor>🔗</a></h2><h2 id=custom-error-type>custom error type <a href=#custom-error-type class=anchor>🔗</a></h2><h2 id=opaque-error>opaque error <a href=#opaque-error class=anchor>🔗</a></h2><h1 id=go-语言如何处理错误>Go 语言如何处理错误 <a href=#go-%e8%af%ad%e8%a8%80%e5%a6%82%e4%bd%95%e5%a4%84%e7%90%86%e9%94%99%e8%af%af class=anchor>🔗</a></h1><p>这一节将介绍处理错误的方法和原则</p><p>首先，错误处理有一条通用的原则：对于错误，要么不处理，要么完全处理</p><p>我不知道怎么做，不处理，直接将错误传给上层, 如下示例</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>readFile</span>(<span style=color:#e6db74>&#34;example.txt&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>content</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>readFile</span>(<span style=color:#a6e22e>path</span> <span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>ReadFile</span>(<span style=color:#a6e22e>path</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;&#34;</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> string(<span style=color:#a6e22e>content</span>), <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>我知道怎么做，完全处理好，屏蔽掉底层错误，如下示例</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>content</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>readFile</span>(<span style=color:#e6db74>&#34;example.txt&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>content</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>readFile</span>(<span style=color:#a6e22e>path</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>ReadFile</span>(<span style=color:#a6e22e>path</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;default text&#34;</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> string(<span style=color:#a6e22e>content</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>总之一定要清楚自己在干什么，不要又处理一部分，又要抛给上层</p><blockquote>
+<p>Don&rsquo;t just check errors, handle them gracefully.</p></blockquote><p>最常见的场景是记录日志，因为记录日志本身也是处理错误</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>readFile</span>(<span style=color:#a6e22e>path</span> <span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>ReadFile</span>(<span style=color:#a6e22e>path</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;&#34;</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> string(<span style=color:#a6e22e>content</span>), <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>错误处理一般有以下几种选择</p><ol>
+<li>直接将错误向上传，即直接 return err</li><li>包装当前错误，添加上下文信息, 再向上传</li><li>屏蔽掉底层错误, 返回自己定义的错误</li><li>处理错误，不返回错误</li></ol><p>对于应用来说，不需要定义自己的错误类型，使用 github.com/pkg/errors 包</p><p>可以把应用的调用链抽象为 layer1 -> layer2 -> layer3 -> lib</p><p>layer3 就是调用 API 的地方，即应用的边界，对于 lib 返回的 error，使用 WithStack/Wrap/Wrapf 包装, 这里的重点是带上调用栈信息</p><p>layer2 直接返回 layer3 的 error，或者使用 WithMessage/WithMessagef 包装，或者直接处理好，不返回 error</p><p>layer1 是最上层了，只能把 error 处理好，日志记录就在这里</p><p>对于库来说，要使用上面讲的 opaque error 设计</p><h1 id=错误处理技巧>错误处理技巧 <a href=#%e9%94%99%e8%af%af%e5%a4%84%e7%90%86%e6%8a%80%e5%b7%a7 class=anchor>🔗</a></h1><p>长久以来，对于 Go 语言的一种批评就是"错误处理太繁琐了，要在代码里写非常多的 <code>if err != nil</code>"</p><p>但这可能是习惯于 <code>try...catch</code> 的程序员并没有发挥 Go 语言错误处理的能力</p><p>他们把 <code>if err != nil</code> 当作一个定式，像 <code>try...catch</code> 那样, 而忽略了 Go 语言错误处理的本质，即 Errors are value</p><p>因此，错误在编程中是非常灵活的</p><blockquote>
+<p>Values can be programmed, and since errors are values, errors can be programmed.</p></blockquote><p>下面是一个示例</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>parse</span>(<span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>Point</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>p</span> <span style=color:#a6e22e>Point</span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Longitude</span>)
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Latitude</span>)
+</span></span><span style=display:flex><span>   <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Distance</span>)
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>ElevationGain</span>)
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>ElevationLoss</span>)
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>要解决这个问题，我们可以使用闭包</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>parse</span>(<span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>Point</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>p</span> <span style=color:#a6e22e>Point</span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>read</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>data</span> <span style=color:#66d9ef>interface</span>{}) {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>      <span style=color:#66d9ef>return</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#a6e22e>data</span>)
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Longitude</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Latitude</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Distance</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>ElevationGain</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>ElevationLoss</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Reader</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>err</span> <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Reader</span>) <span style=color:#a6e22e>read</span>(<span style=color:#a6e22e>data</span> <span style=color:#66d9ef>interface</span>{}) {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>Read</span>(<span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>r</span>, <span style=color:#a6e22e>binary</span>.<span style=color:#a6e22e>BigEndian</span>, <span style=color:#a6e22e>data</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>parse</span>(<span style=color:#a6e22e>input</span> <span style=color:#a6e22e>io</span>.<span style=color:#a6e22e>Reader</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>Point</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>p</span> <span style=color:#a6e22e>Point</span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>Reader</span>{<span style=color:#a6e22e>r</span>: <span style=color:#a6e22e>input</span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Longitude</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Latitude</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>Distance</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>ElevationGain</span>)
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>read</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>ElevationLoss</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>使用这种方式，我们还可以实现流式 API</p><p>实际上，<code>bufio</code> 包中的 <code>Scanner</code> 就是这么做的</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#a6e22e>scanner</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>bufio</span>.<span style=color:#a6e22e>NewScanner</span>(<span style=color:#a6e22e>input</span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span> <span style=color:#a6e22e>scanner</span>.<span style=color:#a6e22e>Scan</span>() {
+</span></span><span style=display:flex><span>  <span style=color:#a6e22e>token</span> = <span style=color:#a6e22e>scanner</span>.<span style=color:#a6e22e>Text</span>()
+</span></span><span style=display:flex><span>  <span style=color:#75715e>// process token
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>scanner</span>.<span style=color:#a6e22e>Err</span>(); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>  <span style=color:#75715e>// process error
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>}
+</span></span></code></pre></div><h1 id=references>References <a href=#references class=anchor>🔗</a></h1><ul>
+<li><a href=https://go-proverbs.github.io/ target=_blank rel=noopener>https://go-proverbs.github.io/</a></li><li><a href=https://go.dev/blog/error-handling-and-go target=_blank rel=noopener>https://go.dev/blog/error-handling-and-go</a></li><li><a href=https://go.dev/blog/errors-are-values target=_blank rel=noopener>https://go.dev/blog/errors-are-values</a> 🌟</li><li><a href=https://go.dev/blog/go1.13-errors target=_blank rel=noopener>https://go.dev/blog/go1.13-errors</a> 🌟</li><li><a href=https://dave.cheney.net/2014/12/24/inspecting-errors target=_blank rel=noopener>https://dave.cheney.net/2014/12/24/inspecting-errors</a></li><li><a href=https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully target=_blank rel=noopener>https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully</a> 🌟</li><li><a href=https://dave.cheney.net/2016/06/12/stack-traces-and-the-errors-package target=_blank rel=noopener>https://dave.cheney.net/2016/06/12/stack-traces-and-the-errors-package</a></li><li><a href=https://dave.cheney.net/2019/01/27/eliminate-error-handling-by-eliminating-errors target=_blank rel=noopener>https://dave.cheney.net/2019/01/27/eliminate-error-handling-by-eliminating-errors</a></li><li><a href=https://crawshaw.io/blog/xerrors target=_blank rel=noopener>https://crawshaw.io/blog/xerrors</a></li><li><a href=https://www.ardanlabs.com/blog/2014/10/error-handling-in-go-part-i.html target=_blank rel=noopener>https://www.ardanlabs.com/blog/2014/10/error-handling-in-go-part-i.html</a></li><li><a href=https://www.ardanlabs.com/blog/2014/11/error-handling-in-go-part-ii.html target=_blank rel=noopener>https://www.ardanlabs.com/blog/2014/11/error-handling-in-go-part-ii.html</a></li><li><a href=https://www.ardanlabs.com/blog/2017/05/design-philosophy-on-logging.html target=_blank rel=noopener>https://www.ardanlabs.com/blog/2017/05/design-philosophy-on-logging.html</a></li><li><a href=https://medium.com/gett-engineering/error-handling-in-go-53b8a7112d04 target=_blank rel=noopener>https://medium.com/gett-engineering/error-handling-in-go-53b8a7112d04</a></li><li><a href=https://medium.com/gett-engineering/error-handling-in-go-1-13-5ee6d1e0a55c target=_blank rel=noopener>https://medium.com/gett-engineering/error-handling-in-go-1-13-5ee6d1e0a55c</a></li><li><a href=https://pkg.go.dev/golang.org/x/xerrors target=_blank rel=noopener>https://pkg.go.dev/golang.org/x/xerrors</a></li><li><a href=https://pkg.go.dev/github.com/pkg/errors target=_blank rel=noopener>https://pkg.go.dev/github.com/pkg/errors</a></li><li><a href=https://pkg.go.dev/errors@go1.17.7 target=_blank rel=noopener>https://pkg.go.dev/errors@go1.17.7</a></li></ul></div><div class=tags>
+<a href=https://xtyi.github.io/tags/go>go</a>
+</div></section></main><footer id=footer>
+<div id=social>
+<a class=symbol href=https://github.com/xtyi rel=me target=_blank><svg fill="#bbb" width="28" height="28" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>Github</title><desc>Created with Sketch.</desc><defs/><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)"><g id="Github" transform="translate(264.000000, 939.000000)"><path d="M8 72H64c4.418278.0 8-3.581722 8-8V8c0-4.418278-3.581722-8-8-8H8c-4.418278 811624501e-24-8 3.581722-8 8V64c541083001e-24 4.418278 3.581722 8 8 8z" id="Rounded" fill="#bbb"/><path d="M35.9985 13C22.746 13 12 23.7870921 12 37.096644c0 10.6440272 6.876 19.6751861 16.4145 22.8617681C29.6145 60.1797862 30.0525 59.4358488 30.0525 58.7973276 30.0525 58.2250681 30.0315 56.7100863 30.0195 54.6996482c-6.6765 1.4562499-8.085-3.2302544-8.085-3.2302544-1.0905-2.7829884-2.664-3.5239139-2.664-3.5239139C17.091 46.4500754 19.4355 46.4801943 19.4355 46.4801943c2.4075.1701719 3.675 2.4833051 3.675 2.4833051 2.142 3.6820383 5.6175 2.6188404 6.9855 2.0014024C30.3135 49.4077535 30.9345 48.3460615 31.62 47.7436831 26.2905 47.1352808 20.688 45.0691228 20.688 35.8361671c0-2.6308879.9345-4.781379 2.4705-6.4665327C22.911 28.7597262 22.0875 26.3110578 23.3925 22.9934585c0 0 2.016-.6475568 6.6 2.4697516C31.908 24.9285993 33.96 24.6620468 36.0015 24.6515052 38.04 24.6620468 40.0935 24.9285993 42.0105 25.4632101c4.581-3.1173084 6.5925-2.4697516 6.5925-2.4697516C49.9125 26.3110578 49.089 28.7597262 48.8415 29.3696344 50.3805 31.0547881 51.309 33.2052792 51.309 35.8361671c0 9.2555448-5.6115 11.29309-10.9575 11.8894446.860999999999997.7439374 1.629 2.2137408 1.629 4.4621184C41.9805 55.4089489 41.9505 58.0067059 41.9505 58.7973276 41.9505 59.4418726 42.3825 60.1918338 43.6005 59.9554002 53.13 56.7627944 60 47.7376593 60 37.096644 60 23.7870921 49.254 13 35.9985 13" fill="#fff"/></g></g></g></svg>
+</a>
+</div><div class=copyright>
+© Copyright
+2022
+<span class=split><svg fill="#bbb" width="15" height="15" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15"><path d="M13.91 6.75c-1.17 2.25-4.3 5.31-6.07 6.94-.1903.1718-.4797.1718-.67.0C5.39 12.06 2.26 9 1.09 6.75-1.48 1.8 5-1.5 7.5 3.45 10-1.5 16.48 1.8 13.91 6.75z"/></svg>
+</span>
+</div><div class=powerby>
+Powered by <a href=http://www.gohugo.io/>Hugo</a> Theme By <a href=https://https://github.com/nodejh/hugo-theme-mini>nodejh</a>
+</div></footer></body></html>
