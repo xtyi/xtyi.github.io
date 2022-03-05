@@ -1,0 +1,16 @@
+baseURL: https://xtyi.github.io
+languageCode: zh
+title: Blog
+theme: mini
+
+social:
+  github: https://github.com/xtyi
+
+params:
+  hiddenPostSummaryInHomePage: true
+  showToc: true
+
+markup:
+  tableOfContents:
+    endLevel: 2
+    startLevel: 1
