@@ -1,51 +1,17 @@
-<!doctype html><html lang=zh>
-<head>
-<title>JavaScript 的 this 是什么？ | Blog</title><meta charset=utf-8>
-<meta http-equiv=x-ua-compatible content="IE=edge,chrome=1">
-<meta name=viewport content="width=device-width,minimum-scale=1">
-<meta name=description content="this 🔗理解 JS 的 this 实际上非常简单，只需要了解 call 就行了
+<!doctype html><html lang=zh><head><title>JavaScript 的 this 是什么？ | Blog</title><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge,chrome=1"><meta name=viewport content="width=device-width,minimum-scale=1"><meta name=description content="this 🔗理解 JS 的 this 实际上非常简单，只需要了解 call 就行了
 接下来，我们都使用 call 来调用函数，因为这才是 JS 最原始的函数调用方式
 function foo() { 	'use strict' 	console.log(this) 	console.log(arguments) }  foo.call() foo.call({name: 'nada'}) foo.call({name: 'nada'}, 1, 2, 3) 上面三次调用打印的内容如下 可以看到，当我们什么都不传入的时候 this 为 undefined，而当我们传入一个对象作为第一个参数时，this 就是这个对象
  Arguments 对象是其它参数组成的一个伪数组
  现在，你已经知道 this 就是 call 调用时传入的第一个参数，那么 this 到底有什么用呢 ？正常调用函数时为什么没传 this ？
 我们不使用 this 写一段代码感受一下
-const person = { 	name: 'nada', 	greet(person) { 	console.log(`Hey, I'm ${person.name}`) 	} }  person.">
-<meta name=generator content="Hugo 0.93.2">
-<meta name=ROBOTS content="NOINDEX, NOFOLLOW">
-<link rel=stylesheet href=/css/style.css>
-<link rel="shortcut icon" href=/images/favicon.ico type=image/x-icon>
-</head><body>
-<nav class=navigation>
-<a href=/> <span class=arrow>←</span>Home</a>
+const person = { 	name: 'nada', 	greet(person) { 	console.log(`Hey, I'm ${person.name}`) 	} }  person."><meta name=generator content="Hugo 0.94.2"><meta name=ROBOTS content="NOINDEX, NOFOLLOW"><link rel=stylesheet href=/css/style.css><link rel="shortcut icon" href=/images/favicon.ico type=image/x-icon></head><body><nav class=navigation><a href=/><span class=arrow>←</span>Home</a>
 <a href=/posts>Archive</a>
 <a href=/tags>Tags</a>
-<a href=/about>About</a>
-</nav><main class=main>
-<section id=single>
-<h1 class=title>JavaScript 的 this 是什么？</h1><div class=tip>
-<time datetime="2018-04-12 13:38:28 +0800 +0800">Apr 12, 2018</time>
-<span class=split>
-·
-</span>
-<span>
-274 words
-</span>
-<span class=split>
-·
-</span>
-<span>
-2 minute read
-</span>
-</div><aside class=toc>
-<details>
-<summary>Table of Contents
-</summary>
-<div>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#this>this</a></li><li><a href=#回调函数>回调函数</a></li><li><a href=#箭头函数>箭头函数</a></li></ul></nav></div></details>
-</aside><div class=content>
-<h1 id=this>this <a href=#this class=anchor>🔗</a></h1><p>理解 JS 的 <code>this</code> 实际上非常简单，只需要了解 <code>call</code> 就行了</p><p>接下来，我们都使用 <code>call</code> 来调用函数，因为这才是 JS 最原始的函数调用方式</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>function</span> <span style=color:#a6e22e>foo</span>() {
+<a href=/about>About</a></nav><main class=main><section id=single><h1 class=title>JavaScript 的 this 是什么？</h1><div class=tip><time datetime="2018-04-12 13:38:28 +0800 +0800">Apr 12, 2018</time>
+<span class=split>·</span>
+<span>274 words</span>
+<span class=split>·</span>
+<span>2 minute read</span></div><aside class=toc><details><summary>Table of Contents</summary><div><nav id=TableOfContents><ul><li><a href=#this>this</a></li><li><a href=#回调函数>回调函数</a></li><li><a href=#箭头函数>箭头函数</a></li></ul></nav></div></details></aside><div class=content><h1 id=this>this <a href=#this class=anchor>🔗</a></h1><p>理解 JS 的 <code>this</code> 实际上非常简单，只需要了解 <code>call</code> 就行了</p><p>接下来，我们都使用 <code>call</code> 来调用函数，因为这才是 JS 最原始的函数调用方式</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>function</span> <span style=color:#a6e22e>foo</span>() {
 </span></span><span style=display:flex><span>	<span style=color:#e6db74>&#39;use strict&#39;</span>
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>console</span>.<span style=color:#a6e22e>log</span>(<span style=color:#66d9ef>this</span>)
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>console</span>.<span style=color:#a6e22e>log</span>(<span style=color:#a6e22e>arguments</span>)
@@ -54,11 +20,7 @@ const person = { 	name: 'nada', 	greet(person) { 	console.log(`Hey, I'm ${person
 </span></span><span style=display:flex><span><span style=color:#a6e22e>foo</span>.<span style=color:#a6e22e>call</span>()
 </span></span><span style=display:flex><span><span style=color:#a6e22e>foo</span>.<span style=color:#a6e22e>call</span>({<span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;nada&#39;</span>})
 </span></span><span style=display:flex><span><span style=color:#a6e22e>foo</span>.<span style=color:#a6e22e>call</span>({<span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;nada&#39;</span>}, <span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>2</span>, <span style=color:#ae81ff>3</span>)
-</span></span></code></pre></div><p>上面三次调用打印的内容如下
-<p class=markdown-image>
-<img src=https://img-blog.csdnimg.cn/20200228235903207.png alt="js call">
-</p>可以看到，当我们什么都不传入的时候 <code>this</code> 为 <code>undefined</code>，而当我们传入一个对象作为第一个参数时，<code>this</code> 就是这个对象</p><blockquote>
-<p><code>Arguments</code> 对象是其它参数组成的一个伪数组</p></blockquote><p>现在，你已经知道 <code>this</code> 就是 <code>call</code> 调用时传入的第一个参数，那么 <code>this</code> 到底有什么用呢 ？正常调用函数时为什么没传 <code>this</code> ？</p><p>我们不使用 <code>this</code> 写一段代码感受一下</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>person</span> <span style=color:#f92672>=</span> {
+</span></span></code></pre></div><p>上面三次调用打印的内容如下<p class=markdown-image><img src=https://img-blog.csdnimg.cn/20200228235903207.png alt="js call"></p>可以看到，当我们什么都不传入的时候 <code>this</code> 为 <code>undefined</code>，而当我们传入一个对象作为第一个参数时，<code>this</code> 就是这个对象</p><blockquote><p><code>Arguments</code> 对象是其它参数组成的一个伪数组</p></blockquote><p>现在，你已经知道 <code>this</code> 就是 <code>call</code> 调用时传入的第一个参数，那么 <code>this</code> 到底有什么用呢 ？正常调用函数时为什么没传 <code>this</code> ？</p><p>我们不使用 <code>this</code> 写一段代码感受一下</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>person</span> <span style=color:#f92672>=</span> {
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;nada&#39;</span>,
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>greet</span>(<span style=color:#a6e22e>person</span>) {
 </span></span><span style=display:flex><span>		<span style=color:#a6e22e>console</span>.<span style=color:#a6e22e>log</span>(<span style=color:#e6db74>`Hey, I&#39;m </span><span style=color:#e6db74>${</span><span style=color:#a6e22e>person</span>.<span style=color:#a6e22e>name</span><span style=color:#e6db74>}</span><span style=color:#e6db74>`</span>)
@@ -74,8 +36,7 @@ const person = { 	name: 'nada', 	greet(person) { 	console.log(`Hey, I'm ${person
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
 </span></span><span style=display:flex><span><span style=color:#a6e22e>person</span>.<span style=color:#a6e22e>greet</span>()
-</span></span></code></pre></div><blockquote>
-<p>Python 在这种问题上就采取了不同的设计，Python 中类的方法的第一个参数永远是 <code>self</code>，这样的话，调用和声明就出现了不一致，不过这种不一致还可以接受吧</p></blockquote><p>函数和对象本无关系，函数负责逻辑，对象负责数据，但是面向对象编程中，将对象(数据)和函数封装在一起，这种情况下，函数只为某些对象服务，函数和对象就需要有一定的关联，函数就需要一个上下文</p><p>然而函数本质只有输入和输出，没有上下文</p><p>因此 <code>this</code> 就作为函数的参数为函数带来了上下文，这个上下文就是一个对象，函数内部就可以通过 <code>this</code> 关键字访问这个对象的属性</p><p><code>this</code> 其实就是连接函数和对象的桥梁</p><p>最后再来看一些示例吧</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>person</span> <span style=color:#f92672>=</span> {
+</span></span></code></pre></div><blockquote><p>Python 在这种问题上就采取了不同的设计，Python 中类的方法的第一个参数永远是 <code>self</code>，这样的话，调用和声明就出现了不一致，不过这种不一致还可以接受吧</p></blockquote><p>函数和对象本无关系，函数负责逻辑，对象负责数据，但是面向对象编程中，将对象(数据)和函数封装在一起，这种情况下，函数只为某些对象服务，函数和对象就需要有一定的关联，函数就需要一个上下文</p><p>然而函数本质只有输入和输出，没有上下文</p><p>因此 <code>this</code> 就作为函数的参数为函数带来了上下文，这个上下文就是一个对象，函数内部就可以通过 <code>this</code> 关键字访问这个对象的属性</p><p><code>this</code> 其实就是连接函数和对象的桥梁</p><p>最后再来看一些示例吧</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>person</span> <span style=color:#f92672>=</span> {
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;nada&#39;</span>,
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>foo</span>() {
 </span></span><span style=display:flex><span>		<span style=color:#a6e22e>console</span>.<span style=color:#a6e22e>log</span>(<span style=color:#66d9ef>this</span>)
@@ -86,8 +47,7 @@ const person = { 	name: 'nada', 	greet(person) { 	console.log(`Hey, I'm ${person
 </span></span></code></pre></div><p>这里调用 <code>person.foo()</code> 后打印的 <code>this</code> 当然是 <code>person</code> 对象</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>bar</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>person</span>.<span style=color:#a6e22e>foo</span>
 </span></span><span style=display:flex><span><span style=color:#a6e22e>bar</span>()
 </span></span></code></pre></div><p>调用 <code>bar()</code> 打印的 <code>this</code> 是 <code>Window</code> 对象</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#a6e22e>person</span>.<span style=color:#a6e22e>foo</span>.<span style=color:#a6e22e>call</span>({<span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;nono&#39;</span>})
-</span></span></code></pre></div><p>这时，<code>this</code> 是 <code>{name: 'nono'}</code></p><p>这很清楚的说明了，<code>this</code> 正像上面所述，是动态传入的参数</p><p>而不是将一个函数作为一个对象的属性，这个函数的 <code>this</code> 就一定是这个对象</p><blockquote>
-<p>函数和对象本质上并无关联</p></blockquote><p><code>this</code> 是什么，只有调用时才能确定</p><p>如果面试官拿着下面这样的只有声明的代码问你 <code>this</code> 是什么，那你只能回答说没人能知道</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>person</span> <span style=color:#f92672>=</span> {
+</span></span></code></pre></div><p>这时，<code>this</code> 是 <code>{name: 'nono'}</code></p><p>这很清楚的说明了，<code>this</code> 正像上面所述，是动态传入的参数</p><p>而不是将一个函数作为一个对象的属性，这个函数的 <code>this</code> 就一定是这个对象</p><blockquote><p>函数和对象本质上并无关联</p></blockquote><p><code>this</code> 是什么，只有调用时才能确定</p><p>如果面试官拿着下面这样的只有声明的代码问你 <code>this</code> 是什么，那你只能回答说没人能知道</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-js data-lang=js><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>person</span> <span style=color:#f92672>=</span> {
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>name</span><span style=color:#f92672>:</span> <span style=color:#e6db74>&#39;nada&#39;</span>,
 </span></span><span style=display:flex><span>	<span style=color:#a6e22e>foo</span>() {
 </span></span><span style=display:flex><span>		<span style=color:#a6e22e>console</span>.<span style=color:#a6e22e>log</span>(<span style=color:#66d9ef>this</span>)
@@ -116,17 +76,6 @@ const person = { 	name: 'nada', 	greet(person) { 	console.log(`Hey, I'm ${person
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>bar</span> <span style=color:#f92672>=</span> <span style=color:#a6e22e>person</span>.<span style=color:#a6e22e>foo</span>()
 </span></span><span style=display:flex><span><span style=color:#a6e22e>bar</span>() <span style=color:#75715e>// &#39;nada&#39;
-</span></span></span></code></pre></div><p>上面的箭头函数是在 <code>person</code> 对象中的，所以它的 <code>this</code> 就绑定了 <code>person</code> 对象</p></div><div class=tags>
-<a href=https://xtyi.github.io/tags/js>js</a>
-</div></section></main><footer id=footer>
-<div id=social>
-<a class=symbol href=https://github.com/xtyi rel=me target=_blank><svg fill="#bbb" width="28" height="28" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>Github</title><desc>Created with Sketch.</desc><defs/><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)"><g id="Github" transform="translate(264.000000, 939.000000)"><path d="M8 72H64c4.418278.0 8-3.581722 8-8V8c0-4.418278-3.581722-8-8-8H8c-4.418278 811624501e-24-8 3.581722-8 8V64c541083001e-24 4.418278 3.581722 8 8 8z" id="Rounded" fill="#bbb"/><path d="M35.9985 13C22.746 13 12 23.7870921 12 37.096644c0 10.6440272 6.876 19.6751861 16.4145 22.8617681C29.6145 60.1797862 30.0525 59.4358488 30.0525 58.7973276 30.0525 58.2250681 30.0315 56.7100863 30.0195 54.6996482c-6.6765 1.4562499-8.085-3.2302544-8.085-3.2302544-1.0905-2.7829884-2.664-3.5239139-2.664-3.5239139C17.091 46.4500754 19.4355 46.4801943 19.4355 46.4801943c2.4075.1701719 3.675 2.4833051 3.675 2.4833051 2.142 3.6820383 5.6175 2.6188404 6.9855 2.0014024C30.3135 49.4077535 30.9345 48.3460615 31.62 47.7436831 26.2905 47.1352808 20.688 45.0691228 20.688 35.8361671c0-2.6308879.9345-4.781379 2.4705-6.4665327C22.911 28.7597262 22.0875 26.3110578 23.3925 22.9934585c0 0 2.016-.6475568 6.6 2.4697516C31.908 24.9285993 33.96 24.6620468 36.0015 24.6515052 38.04 24.6620468 40.0935 24.9285993 42.0105 25.4632101c4.581-3.1173084 6.5925-2.4697516 6.5925-2.4697516C49.9125 26.3110578 49.089 28.7597262 48.8415 29.3696344 50.3805 31.0547881 51.309 33.2052792 51.309 35.8361671c0 9.2555448-5.6115 11.29309-10.9575 11.8894446.860999999999997.7439374 1.629 2.2137408 1.629 4.4621184C41.9805 55.4089489 41.9505 58.0067059 41.9505 58.7973276 41.9505 59.4418726 42.3825 60.1918338 43.6005 59.9554002 53.13 56.7627944 60 47.7376593 60 37.096644 60 23.7870921 49.254 13 35.9985 13" fill="#fff"/></g></g></g></svg>
-</a>
-</div><div class=copyright>
-© Copyright
+</span></span></span></code></pre></div><p>上面的箭头函数是在 <code>person</code> 对象中的，所以它的 <code>this</code> 就绑定了 <code>person</code> 对象</p></div><div class=tags><a href=https://xtyi.github.io/tags/js>js</a></div></section></main><footer id=footer><div id=social><a class=symbol href=https://github.com/xtyi rel=me target=_blank><svg fill="#bbb" width="28" height="28" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>Github</title><desc>Created with Sketch.</desc><defs/><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)"><g id="Github" transform="translate(264.000000, 939.000000)"><path d="M8 72H64c4.418278.0 8-3.581722 8-8V8c0-4.418278-3.581722-8-8-8H8c-4.418278 811624501e-24-8 3.581722-8 8V64c541083001e-24 4.418278 3.581722 8 8 8z" id="Rounded" fill="#bbb"/><path d="M35.9985 13C22.746 13 12 23.7870921 12 37.096644c0 10.6440272 6.876 19.6751861 16.4145 22.8617681C29.6145 60.1797862 30.0525 59.4358488 30.0525 58.7973276 30.0525 58.2250681 30.0315 56.7100863 30.0195 54.6996482c-6.6765 1.4562499-8.085-3.2302544-8.085-3.2302544-1.0905-2.7829884-2.664-3.5239139-2.664-3.5239139C17.091 46.4500754 19.4355 46.4801943 19.4355 46.4801943c2.4075.1701719 3.675 2.4833051 3.675 2.4833051 2.142 3.6820383 5.6175 2.6188404 6.9855 2.0014024C30.3135 49.4077535 30.9345 48.3460615 31.62 47.7436831 26.2905 47.1352808 20.688 45.0691228 20.688 35.8361671c0-2.6308879.9345-4.781379 2.4705-6.4665327C22.911 28.7597262 22.0875 26.3110578 23.3925 22.9934585c0 0 2.016-.6475568 6.6 2.4697516C31.908 24.9285993 33.96 24.6620468 36.0015 24.6515052 38.04 24.6620468 40.0935 24.9285993 42.0105 25.4632101c4.581-3.1173084 6.5925-2.4697516 6.5925-2.4697516C49.9125 26.3110578 49.089 28.7597262 48.8415 29.3696344 50.3805 31.0547881 51.309 33.2052792 51.309 35.8361671c0 9.2555448-5.6115 11.29309-10.9575 11.8894446.860999999999997.7439374 1.629 2.2137408 1.629 4.4621184C41.9805 55.4089489 41.9505 58.0067059 41.9505 58.7973276 41.9505 59.4418726 42.3825 60.1918338 43.6005 59.9554002 53.13 56.7627944 60 47.7376593 60 37.096644 60 23.7870921 49.254 13 35.9985 13" fill="#fff"/></g></g></g></svg></a></div><div class=copyright>© Copyright
 2022
-<span class=split><svg fill="#bbb" width="15" height="15" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15"><path d="M13.91 6.75c-1.17 2.25-4.3 5.31-6.07 6.94-.1903.1718-.4797.1718-.67.0C5.39 12.06 2.26 9 1.09 6.75-1.48 1.8 5-1.5 7.5 3.45 10-1.5 16.48 1.8 13.91 6.75z"/></svg>
-</span>
-</div><div class=powerby>
-Powered by <a href=http://www.gohugo.io/>Hugo</a> Theme By <a href=https://https://github.com/nodejh/hugo-theme-mini>nodejh</a>
-</div></footer></body></html>
+<span class=split><svg fill="#bbb" width="15" height="15" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 15 15"><path d="M13.91 6.75c-1.17 2.25-4.3 5.31-6.07 6.94-.1903.1718-.4797.1718-.67.0C5.39 12.06 2.26 9 1.09 6.75-1.48 1.8 5-1.5 7.5 3.45 10-1.5 16.48 1.8 13.91 6.75z"/></svg></span></div><div class=powerby>Powered by <a href=http://www.gohugo.io/>Hugo</a> Theme By <a href=https://https://github.com/nodejh/hugo-theme-mini>nodejh</a></div></footer></body></html>

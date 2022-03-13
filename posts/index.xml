@@ -1,4 +1,17 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Blog</title><link>https://xtyi.github.io/posts/</link><description>Recent content in Posts on Blog</description><generator>Hugo -- gohugo.io</generator><language>zh</language><lastBuildDate>Thu, 24 Feb 2022 13:38:28 +0800</lastBuildDate><atom:link href="https://xtyi.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Go 错误处理</title><link>https://xtyi.github.io/posts/go-error-handling/</link><pubDate>Thu, 24 Feb 2022 13:38:28 +0800</pubDate><guid>https://xtyi.github.io/posts/go-error-handling/</guid><description>Go 语言如何表示错误 🔗内置接口 🔗Go 语言内置了一个接口类型 error
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Blog</title><link>https://xtyi.github.io/posts/</link><description>Recent content in Posts on Blog</description><generator>Hugo -- gohugo.io</generator><language>zh</language><lastBuildDate>Sun, 13 Mar 2022 16:42:19 +0800</lastBuildDate><atom:link href="https://xtyi.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Tailwind</title><link>https://xtyi.github.io/posts/tailwind/</link><pubDate>Sun, 13 Mar 2022 16:42:19 +0800</pubDate><guid>https://xtyi.github.io/posts/tailwind/</guid><description>传统 CSS 框架的缺陷 🔗从学习前端技术以来，我都觉得 CSS 是特别难处理的东西，以前写页面很随意，直接使用 Boostrap、Bulma 等 CSS 框架
+如果用前端框架开发，那就使用对应的 BootstrapVue、ElementUI 等组件库
+这些框架都定义了一套设计语言(风格)，提供许多的组件，基本上能做一个看起来不错的网站
+如果你需要搞一个后台管理界面，或者这些框架的设计语言正好符合你的审美，那这些框架还是不错的
+但是如果要做一个面向用户的，可能维护很久的 web app，一般要有专门的设计师来设计 UI，开发者要根据设计稿还原
+这种情况下，使用这些框架就很麻烦了，首先这些框架自带样式，这些样式很可能和设计稿的样式冲突，你还要覆盖掉这些框架的样式，十分麻烦
+那么只能手写 CSS 了吗？
+Tailwind 🔗Tailwind 是近些年流行起来的一个 CSS 框架，它和原先的 CSS 框架(例如 Bootstrap)的不同在于：Tailwind 提供的 class 都是描述一个原子样式的，而不是描述一个组件
+Bootstrap 的大部分 class 都是像 .btn .btn-primary 这样描述一个组件
+&amp;lt;button type=&amp;#34;button&amp;#34; class=&amp;#34;btn btn-primary&amp;#34;&amp;gt;Primary&amp;lt;/button&amp;gt; 嗯，写起来很方便，但是样式就是这样了，虽然也可以自定义主题，但作用有限，想要完全掌控页面的样式，还是不太现实的
+Tailwind 呢？
+&amp;lt;button class=&amp;#34;text-white bg-[#0d6efd] border-[1px] border-[#0d6efd] hover:bg-[#0b5ed7] hover:border-[#0a58ca] px-2 py-1 rounded-md font-normal&amp;#34;&amp;gt;Primary&amp;lt;/button&amp;gt; 确实更灵活了，但是，这不就是内联样式吗？！
+而且学习 CSS 的时候一定被教导过，不要写这样的类
+.text-white { color: white; } 一个类应该描述一个组件，而且要好好命名，遵循 BEM 规范等等，例如</description></item><item><title>Go 错误处理</title><link>https://xtyi.github.io/posts/go-error-handling/</link><pubDate>Thu, 24 Feb 2022 13:38:28 +0800</pubDate><guid>https://xtyi.github.io/posts/go-error-handling/</guid><description>Go 语言如何表示错误 🔗内置接口 🔗Go 语言内置了一个接口类型 error
 type error interface { Error() string } 所有实现了 error 接口的类型被称为错误类型(Error Type)
 错误类型的值表示一个错误的发生
 error 接口只定义了一个方法 Error()，该方法返回一个字符串，用来描述错误信息
