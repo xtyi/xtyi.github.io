@@ -483,6 +483,8 @@ func As(err error, target interface{}) bool {}
 同时修改了 `fmt.Errorf()` 的实现
 
 
+
+
 # 如何设计错误处理
 
 Go 语言的错误处理有下面三种设计模式：
@@ -706,7 +708,6 @@ if err := scanner.Err(); err != nil {
 - https://dave.cheney.net/2014/12/24/inspecting-errors
 - https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully 🌟
 - https://dave.cheney.net/2016/06/12/stack-traces-and-the-errors-package
-- https://dave.cheney.net/2019/01/27/eliminate-error-handling-by-eliminating-errors
 - https://crawshaw.io/blog/xerrors
 - https://www.ardanlabs.com/blog/2014/10/error-handling-in-go-part-i.html
 - https://www.ardanlabs.com/blog/2014/11/error-handling-in-go-part-ii.html
